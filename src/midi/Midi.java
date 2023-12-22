@@ -6,7 +6,11 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.List;
-
+/**
+ * 
+ * Refs:
+ * https://www.youtube.com/watch?v=2BccxWkUgaU&list=PL7w4cOVVxL6HWGokiABmiZnssYQjo_UFd
+ */
 public class Midi {
     
     private final MidiHeader midiHeader;

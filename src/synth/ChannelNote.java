@@ -1,13 +1,15 @@
 package synth;
 public class ChannelNote {
     
+    public int channelId;
+
     private final SampleSynth synth;
 
     private int midiNote; // 0~127
     private Instrument instrument;
     private double volumeFactor;
 
-    private double sampleIndex;
+    public double sampleIndex;
     private double sampleIndexInc;
     
     private double envelopeVolume = 0; // 0.0~1.0
@@ -22,7 +24,8 @@ public class ChannelNote {
 
     private STAGE stage = STAGE.NONE;
 
-    public ChannelNote(SampleSynth synth) {
+    public ChannelNote(int channelId, SampleSynth synth) {
+        this.channelId = channelId;
         this.synth = synth;
     }
 
@@ -49,7 +52,9 @@ public class ChannelNote {
         }
         
         int midiBaseNote = instrument.getSample().getBaseMidiNote();
-        double noteFrequency = instrument.getSample().getSampleRate() * Math.pow(2.0, (midiNote - midiBaseNote) / 12.0);
+        int fineTuning = instrument.getSample().getFineTuning();
+
+        double noteFrequency = instrument.getSample().getSampleRate() * Math.pow(2.0, (midiNote - midiBaseNote + (fineTuning / 100.0)) / 12.0);
         double pitchFactor = noteFrequency / synth.getSampleRate();
         
         sampleIndex = 0;

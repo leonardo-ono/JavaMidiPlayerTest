@@ -12,12 +12,12 @@ public class Sample {
     private final int loopLength;
     private final int loopEnd;
     private final boolean useLoop;
+    private final int fineTuning;
 
     public byte[] data;
 
-    public Sample(String resource, int baseMidiNote, int loopStart, int loopEnd) throws Exception {
+    public Sample(String resource, int baseMidiNote, int loopStart, int loopEnd, int fineTuning) throws Exception {
         int sampleRateTmp = 0;
-
         try (
             InputStream is = getClass().getResourceAsStream(resource);
             AudioInputStream audioInputStream = AudioSystem.getAudioInputStream(is);
@@ -32,8 +32,24 @@ public class Sample {
             sampleRateTmp = (int) format.getSampleRate();
 
             int frameSize = format.getFrameSize();
-            data = new byte[(int) (frameSize * audioInputStream.getFrameLength())];
-            audioInputStream.read(data);
+            //data = new byte[(int) (frameSize * audioInputStream.getFrameLength())];
+            //audioInputStream.read(data);
+            data = audioInputStream.readAllBytes();
+/*
+            int maxValue = 0;
+            for (int i = 0; i < data.length; i++) {
+                int sampleValue = Math.abs((data[i] & 0xff) - 128);
+                if (sampleValue > maxValue) {
+                    maxValue = sampleValue;
+                }
+            }
+
+            for (int i = 0; i < data.length; i++) {
+                int sampleValue = ((data[i] & 0xff) - 128);
+                sampleValue = (int) (127.0 * (sampleValue / (double) (1.0 + maxValue)));
+                data[i] = (byte) (sampleValue + 128);
+            }
+ */
         } 
 
         this.sampleRate = sampleRateTmp;
@@ -47,6 +63,7 @@ public class Sample {
         this.loopEnd = loopEnd;
         this.loopLength = loopEnd - loopStart + 1;
         this.useLoop = loopLength > 2;
+        this.fineTuning = fineTuning;
     }
 
     public int getSampleRate() {
@@ -75,6 +92,10 @@ public class Sample {
 
     public byte[] getData() {
         return data;
+    }
+    
+    public int getFineTuning() {
+        return fineTuning;
     }
 
     public byte getNextSample(double sampleIndex) {
@@ -117,6 +138,10 @@ public class Sample {
         nextSample = (int) (nextSampleA + lerp * (nextSampleB - nextSampleA));
 
         return (byte) (nextSample + 128);
+    }
+
+    public void setData(byte[] data) {
+        this.data = data;
     }
     
 }

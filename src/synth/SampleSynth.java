@@ -29,7 +29,7 @@ public class SampleSynth {
         for (int ch = 0; ch < numChannels; ch++) {
             for (int midiNote = 0; midiNote < 128; midiNote++) {
                 int noteId = (ch << 7) + midiNote;
-                notes[noteId] = new ChannelNote(this);
+                notes[noteId] = new ChannelNote(ch, this);
             }
         }
     }
@@ -82,13 +82,48 @@ public class SampleSynth {
             notes[noteId].noteOff();
         }
     }
-    
+
+    public static double log2(double n) {
+        // calculate log2 N indirectly
+        // using log() method
+        double result = Math.log(n) / Math.log(2);
+        return result;
+    }
+
     public byte getNextSample() {
         int mixedSample = 0;
+        
+        /*
+        double max = 1.0;
+        for (int noteId : activeNotes) {
+            ChannelNote note = notes[noteId];
+            double originalSampleIndex = note.sampleIndex;
+            int noteSample = Math.abs((note.getNextSample() & 0xff) - 128);
+            note.sampleIndex = originalSampleIndex;
+            if (noteSample > max) {
+                max = noteSample;
+            }
+        }
+
+        double n = 1;
+        for (int noteId : activeNotes) {
+            ChannelNote note = notes[noteId];
+            double originalSampleIndex = note.sampleIndex;
+            int noteSample = Math.abs((note.getNextSample() & 0xff) - 128);
+            note.sampleIndex = originalSampleIndex;
+            n += noteSample / 128.0;
+        }
+        */
+
         for (int noteId : activeNotes) {
             ChannelNote note = notes[noteId];
             int noteSample = (note.getNextSample() & 0xff) - 128;
-            mixedSample = Math.max(Math.min(mixedSample + noteSample / 2, 127), -128);
+            if (note.channelId == 9) {
+                mixedSample = Math.max(Math.min((int) (mixedSample + noteSample / 2), 127), -128);
+            }
+            else {
+                mixedSample = Math.max(Math.min((int) (mixedSample + noteSample / 4), 127), -128);
+            }
             if (note.getStage() == STAGE.NONE) {
                 finishedNotes.add(noteId);
             }

@@ -17,7 +17,7 @@ import synth.SampleSynth;
 public class App {
     public static void main(String[] args) throws Exception {
         
-        SampleSynth synth = new SampleSynth(44100, 24);
+        SampleSynth synth = new SampleSynth(44100, 16);
         
         // load instruments
         try (BufferedReader br = new BufferedReader(new InputStreamReader(App.class.getResourceAsStream("/res/instruments.txt")))) {
@@ -87,8 +87,9 @@ public class App {
                     sample_end_loop = Integer.parseInt(line.split("=")[1].trim());
                 } 
                 if (line.startsWith("self.sf2parser=")) { //<sf2utils.sf2parse.Sf2File object at 0x000001CCDA240FE0>
-                    Sample sample = new Sample("/res/samples/" + sample_filename, sample_root_key, sample_start_loop, sample_end_loop);
-                    Instrument instrument = new Instrument(sample, envelope_attack, envelope_decay, 5.0, envelope_release, envelope_sustain_level);
+                    int fineTuning = instrument_number == 68 ? 27 : 0;
+                    Sample sample = new Sample("/res/samples/" + sample_filename, sample_root_key, sample_start_loop, sample_end_loop, fineTuning);
+                    Instrument instrument = new Instrument(sample, envelope_attack, envelope_decay, 10.0, envelope_release, envelope_sustain_level);
                     synth.setBankInstrument(instrument_number, instrument);
                 } 
             }
@@ -105,6 +106,8 @@ public class App {
 
             int drum_note = 0;
             String sample_filename = "";
+            int sample_start_loop = 0;
+            int sample_end_loop = 0;
             
             while ((line = br.readLine()) != null) {
                 System.out.println(line);
@@ -114,8 +117,15 @@ public class App {
                 if (line.startsWith("sample_filename")) { //= 000298.wav
                     sample_filename = line.split("=")[1].trim();
                 }
+                if (line.startsWith("sample_start_loop")) { //= 4686
+                    sample_start_loop = Integer.parseInt(line.split("=")[1].trim());
+                }
+                if (line.startsWith("sample_end_loop")) { //= 4841
+                    sample_end_loop = Integer.parseInt(line.split("=")[1].trim());
+                } 
                 if (line.startsWith("self.sf2parser=")) { //<sf2utils.sf2parse.Sf2File object at 0x000001CCDA240FE0>
-                    Sample sampleDrum = new Sample("/res/samples/drums/" + sample_filename, drum_note, 0, 0);
+                    int fineTuning = 0;
+                    Sample sampleDrum = new Sample("/res/samples/drums/" + sample_filename, drum_note, 0, 0, fineTuning);
                     Instrument instrumentDrum = new Instrument(sampleDrum, 0.01, 0.01, 100.0, 0.01, 1.0);
                     synth.registerDrumInstrument(drum_note, instrumentDrum);
                 } 
@@ -123,13 +133,15 @@ public class App {
         }        
         
 
-        //Midi midiSequence = new Midi("/res/midi/chrono-trigger-7-.mid"); // <-- ok
-        //Midi midiSequence = new Midi("/res/midi/TWINBEE.mid"); // <-- ok
-        //Midi midiSequence = new Midi("/res/midi/ff7tifa.mid"); // <--ok
         //Midi midiSequence = new Midi("/res/midi/star-stealing-girl-3-.mid"); // <-- ok
+        Midi midiSequence = new Midi("/res/midi/TWINBEE.mid"); // <-- ok
+        //Midi midiSequence = new Midi("/res/midi/ff7tifa.mid"); // <--ok
+        //Midi midiSequence = new Midi("/res/midi/e1m1.mid"); // <-- ok
 
         //Midi midiSequence = new Midi("/res/midi/chrono_cross.mid");
-        Midi midiSequence = new Midi("/res/midi/ff7aerith.mid");
+        //Midi midiSequence = new Midi("/res/midi/ff7aerith.mid");
+        //Midi midiSequence = new Midi("/res/midi/ff7barret.mid");
+        //Midi midiSequence = new Midi("/res/midi/overworld.mid");
 
         
         List<midi.MidiEvent> allEvents = new ArrayList<>();
@@ -165,7 +177,7 @@ public class App {
                 while ((event = allEvents.get(eventIndex)) != null) {
                     if (event != null && event.time == tick) {
                         //System.out.println("tick " + tick + " event " + event);
-                        if (event.channel != 999) {
+                        if (event.channel !=  555) {
                             switch (event.status) {
                                 case midi.MidiEvent.MIDI_METAEVENT -> {
                                     // set tempo
@@ -183,13 +195,13 @@ public class App {
 
                                 case midi.MidiEvent.MIDI_EVENT_CHANGE_PROGRAM -> {
                                     synth.changeChannelInstrument(event.channel, event.data1);
-                                    //System.out.println("change program: " + event.data1);
+                                    System.out.println("channel " + event.channel + " change program: " + event.data1);
                                 }
 
                                 case midi.MidiEvent.MIDI_EVENT_NOTE_ON -> {
                                     if (event.data2 > 0) {
                                         int data2 = event.data2;
-                                        if (event.channel == synth.getDrumChannelId()) data2 = 127;
+                                        //if (event.channel == synth.getDrumChannelId()) data2 = 127;
                                         synth.noteOn(event.channel, event.data1, data2);
                                     } 
                                     else {
@@ -199,6 +211,10 @@ public class App {
 
                                 case midi.MidiEvent.MIDI_EVENT_NOTE_OFF -> {
                                     synth.noteOff(event.channel, event.data1);
+                                }
+
+                                default -> {
+                                    //System.out.println("ignoring message " + event.status + " " + event.data1 + " " + event.data2);
                                 }
                             }
                         }
